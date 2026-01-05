@@ -297,13 +297,11 @@ def extract_pub_date(x: str | etree.ElementTree) -> Date:
     except (AttributeError, ValueError, AssertionError):
         day = None
 
-        return Date(
-            year=year,
-            month=month,
-            day=day,
-        )
-    except Exception as e:
-        raise ValueError(f"Invalid publication date in {describe_source(x)}") from e
+    return Date(
+        year=year,
+        month=month,
+        day=day,
+    )
 
 
 def extract_references(x: str | etree.ElementTree) -> list[Reference]:
@@ -385,7 +383,7 @@ def extract_references(x: str | etree.ElementTree) -> list[Reference]:
             ref_info_nodes.sort(key=score_node, reverse=True)
             ref_info_node = ref_info_nodes[0]
 
-            # Extract all available referenced IDs (DOI, PMCID, PMID, etc.)
+            # Extract all available referenced IDs (DOI, PMC, PMID, etc.)
             referenced_ids = {}
             referenced_id_nodes = ref_info_node.findall("pub-id")
             for referenced_id_node in referenced_id_nodes:
@@ -428,7 +426,11 @@ def extract_article(x: str | etree.ElementTree, *, strict: bool = True) -> Artic
     Raises:
         ValueError: If any extracted data doesn't meet schema validation requirements
     """
-    x = build_xml_tree(x)
+    try:
+        x = build_xml_tree(x)
+    except Exception as e:
+        print(f"Failed to build XML tree for {describe_source(x)}")
+        return x
 
     def _get(field: str, fn, default):
         try:
