@@ -1,6 +1,8 @@
 """Utility functions for PubMed/PMC XML parsing."""
 
 from lxml import etree
+import os
+import regex as re
 
 def describe_source(x: str | etree.ElementTree) -> str:
     """Best-effort human-readable description of the XML source."""
@@ -26,15 +28,22 @@ def build_xml_tree(x: str | etree.ElementTree) -> etree.ElementTree:
     
     if not isinstance(x, str) or not x.strip():
         raise ValueError("Input must be a non-empty string containing a filepath or XML content")
-    # First, try to open as a file path
-    try:
-        return etree.parse(x)
-    except (OSError, IOError, etree.XMLSyntaxError):
-        # Not a valid filepath or can't open file, try as XML string
-        try:
-            return etree.ElementTree(etree.fromstring(x.encode("utf-8") if isinstance(x, str) else x))
-        except Exception as e:
-            raise ValueError(f"Input string is neither a valid file path nor valid XML content: {e}")
+
+    if os.path.isfile(x):
+        x_string = open(x, 'r').read()
+    else:
+        x_string = x
+
+    # Check whether xlink namespace is defined, adding if necessary
+    parser = etree.XMLParser(recover=True)
+    root = etree.fromstring(x_string.encode("utf-8"), parser)
+    if "xlink" not in root.nsmap:
+        root.set(
+            "{http://www.w3.org/2000/xmlns/}xlink",
+            "http://www.w3.org/1999/xlink"
+        )
+    return etree.ElementTree(root)
+
 
 def get_xml_root(x: str | etree.ElementTree) -> etree.Element:
     """Get the root element of an XML tree."""
