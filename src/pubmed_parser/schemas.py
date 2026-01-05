@@ -1,8 +1,8 @@
 """Pydantic schemas for PubMed/PMC article data structures."""
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
-
 from datetime import date
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from typing import Any
 
 class ArticleIDs(BaseModel):
     """Article IDs.
@@ -11,7 +11,7 @@ class ArticleIDs(BaseModel):
     other IDs to be present. The IDs named specifically must be strings or 
     None. Other IDs can be of any type.
     """
-    pmc_id: str | None = Field(None, pattern=r"^PMC\d+$")
+    pmc: str | None = Field(None, pattern=r"^PMC\d+$")
     pmid: str | None = Field(None, pattern=r"^\d+$")
     doi: str | None = None
     publisher_id: str | None = None
@@ -20,6 +20,24 @@ class ArticleIDs(BaseModel):
         extra='allow',
         str_strip_whitespace=True,
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalise_id_types(cls, data: Any):
+        if "publisher-id" in data:
+            data["publisher_id"] = data["publisher-id"]
+            del data["publisher-id"]
+        if "pmcid" in data:
+            data["pmc"] = data["pmcid"]
+            del data["pmcid"]
+        return data
+
+
+    @field_validator("pmc", mode="before")
+    @classmethod
+    def ensure_pmc_pattern(cls, v: Any):
+        digits = ''.join(c for c in v if c.isdigit())
+        return f"PMC{digits}"
 
 
 class Date(BaseModel):
