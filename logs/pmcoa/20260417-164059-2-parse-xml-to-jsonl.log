@@ -1,0 +1,10 @@
+2026-04-17 16:40:59 INFO Starting parse-xml-to-jsonl
+2026-04-17 16:40:59 INFO Arguments: Namespace(xml_dir=PosixPath('sample_data/pubmed/raw'), output=PosixPath('sample_data/pubmed/processed/sample.jsonl'), debug=False, log_file=None, spacy_model='en_core_sci_sm', spacy_batch_size=32, spacy_n_process=1, spacy_max_length=None, workers=1, split=None)
+2026-04-17 16:40:59 WARNING /home/jessica/repos/jessicalamjh/paper_parser/.venv/lib/python3.12/site-packages/spacy/util.py:971: UserWarning: [W095] Model 'en_core_sci_sm' (0.5.4) was trained with spaCy v3.7.4 and may not be 100% compatible with the current version (3.8.14). If you see errors or degraded performance, download a newer compatible model or retrain your custom model with the current spaCy version. For more details and available updates, run: python -m spacy validate
+  warnings.warn(warn_msg)
+
+2026-04-17 16:41:00 WARNING /home/jessica/repos/jessicalamjh/paper_parser/.venv/lib/python3.12/site-packages/spacy/language.py:2235: FutureWarning: Possible set union at position 6328
+  deserializers["tokenizer"] = lambda p: self.tokenizer.from_disk(  # type: ignore[union-attr]
+
+2026-04-17 16:41:00 INFO Found 1 XML files; writing to sample_data/pubmed/processed/sample.jsonl
+2026-04-17 16:41:00 INFO Wrote 1 papers to sample_data/pubmed/processed/sample.jsonl (0 skipped)

@@ -1,0 +1,41 @@
+"""Shared data structures used across source-specific parsers."""
+
+from paper_parser.shared.schemas import (
+    BibEntry,
+    Content,
+    ContentBase,
+    ContentId,
+    ContentType,
+    Date,
+    DEFAULT_REF_TYPE,
+    Figure,
+    Paper,
+    PaperId,
+    PaperIdType,
+    Paragraph,
+    Ref,
+    RefType,
+    Section,
+    Sentence,
+    stringify_content,
+)
+
+__all__ = [
+    "BibEntry",
+    "Content",
+    "ContentBase",
+    "ContentId",
+    "ContentType",
+    "Date",
+    "DEFAULT_REF_TYPE",
+    "Figure",
+    "Paper",
+    "PaperId",
+    "PaperIdType",
+    "Paragraph",
+    "Ref",
+    "RefType",
+    "Section",
+    "Sentence",
+    "stringify_content",
+]

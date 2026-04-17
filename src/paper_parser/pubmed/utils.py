@@ -4,6 +4,8 @@ from lxml import etree
 import os
 import regex as re
 
+from paper_parser.shared.schemas import DEFAULT_REF_TYPE
+
 def describe_source(x: str | etree.ElementTree) -> str:
     """Best-effort human-readable description of the XML source."""
     if isinstance(x, str):
@@ -148,4 +150,42 @@ def convert_month_name_to_number(month_name: str) -> int:
         KeyError: If month name is not recognized
     """
     return MONTH_NAME_TO_NUMBER_MAP[month_name.lower()]
+
+
+PMCOA_XREF_REF_TYPE_MAP: dict[str, str] = {
+    "bibr": "bib_entry",
+    "fig": "figure",
+    "table": "figure",
+    "sec": "section",
+}
+
+
+def normalize_pmcoa_ref_type(
+    ref_type: str | None, default_ref_type: str = DEFAULT_REF_TYPE
+) -> str | None:
+    """Normalize a PMC OA xref ref-type attribute to a schema-compatible value."""
+    rt = (ref_type or "").strip().lower()
+    if not rt:
+        return None
+    return PMCOA_XREF_REF_TYPE_MAP.get(rt, default_ref_type)
+
+
+def _local_tag(el: etree._Element) -> str:
+    """Return local tag name without namespace. Handles lxml QName (callable .tag)."""
+    tag = el.tag
+    if callable(tag):
+        try:
+            tag = tag()
+        except TypeError:
+            tag = getattr(tag, "__name__", None)
+    tag = str(tag)
+    return tag.split("}")[-1] if "}" in tag else tag
+
+
+def _find_child(parent: etree._Element, local_name: str) -> etree._Element | None:
+    """Find direct child element by local tag name (ignores namespace)."""
+    for child in parent:
+        if _local_tag(child) == local_name:
+            return child
+    return None
 
