@@ -12,11 +12,13 @@ from paper_parser.pubmed.parser import (
     extract_subjects,
     extract_title_sentence,
 )
+from paper_parser.pubmed.pmc_id_map import PmcIdMap
 
 __all__ = [
     "parser",
     "utils",
     "PaperParser",
+    "PmcIdMap",
     "extract_bibliography",
     "extract_paper",
     "extract_paper_ids",

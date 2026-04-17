@@ -39,6 +39,7 @@ from paper_parser.shared.schemas import (
     Sentence,
 )
 from paper_parser.shared.sentence_tokenizer import SentenceTokenizer
+from paper_parser.pubmed.pmc_id_map import PmcIdMap
 from paper_parser.pubmed.utils import (
     _find_child,
     _local_tag,
@@ -397,8 +398,13 @@ class PaperParser:
     the full structure.
     """
 
-    def __init__(self, tokenizer: SentenceTokenizer):
+    def __init__(
+        self,
+        tokenizer: SentenceTokenizer,
+        pmc_id_map: PmcIdMap | None = None,
+    ):
         self._tokenizer = tokenizer
+        self._pmc_id_map = pmc_id_map
 
     def parse(self, x: str | etree._ElementTree | Path) -> Paper:
         tree = build_xml_tree(x) if not isinstance(x, Path) else build_xml_tree(str(x))
@@ -414,6 +420,11 @@ class PaperParser:
         paper_ids = extract_paper_ids(tree)
         if all(i.id_type != "pmc" for i in paper_ids):
             paper_ids.append(main_id)
+
+        # Backfill DOI/PMID from the external PMC-ids crosswalk when the XML
+        # itself is missing them. Ids discovered in the XML always win.
+        if self._pmc_id_map is not None:
+            paper_ids = self._pmc_id_map.augment(paper_ids)
 
         try:
             pub_date = extract_pub_date(tree)
@@ -454,6 +465,13 @@ class PaperParser:
                 f"Failed to extract bibliography; source={x=}; using default. error={e}"
             )
             bibliography = {}
+
+        # Backfill bibliography entries too: references often have just one
+        # of {pmc, pmid, doi}, and callers downstream benefit from having
+        # all three available.
+        if self._pmc_id_map is not None:
+            for entry in bibliography.values():
+                entry.all_paper_ids = self._pmc_id_map.augment(entry.all_paper_ids)
 
         root = get_xml_root(tree)
         jobs: list[_TokenizeJob] = []

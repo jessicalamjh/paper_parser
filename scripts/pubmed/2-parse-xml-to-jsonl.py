@@ -7,12 +7,13 @@ Usage (from project root):
 
 ```bash
 uv run python scripts/pubmed/2-parse-xml-to-jsonl.py \
-  --xml-dir sample_data/pubmed/raw \
-  --output sample_data/pubmed/processed/sample.jsonl \
-  --spacy-model en_core_sci_sm \
+  --xml-dir data/pubmed/raw \
+  --output data/pubmed/papers.jsonl \
+  --spacy-model en_core_web_sm \
   --spacy-batch-size 32 \
   --spacy-n-process 1 \
-  --workers 1
+  --workers 20 \
+  --pmc-ids-db data/pubmed/PMC-ids.sqlite
 ```
 """
 
@@ -21,12 +22,12 @@ from __future__ import annotations
 import argparse
 import logging
 import multiprocessing as mp
-from functools import partial
 from pathlib import Path
 
 from tqdm import tqdm
 
 from paper_parser.pubmed.parser import PaperParser
+from paper_parser.pubmed.pmc_id_map import PmcIdMap
 from paper_parser.shared.sentence_tokenizer import SentenceTokenizer, get_sentence_tokenizer
 from paper_parser.shared.utils import setup_logging
 
@@ -38,14 +39,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--xml-dir",
         type=Path,
-        default=Path("data/pmcoa/extracted"),
-        help="Base directory containing extracted/ (default: data/pmcoa/extracted)",
+        default=Path("data/pubmed/extracted"),
+        help="Base directory containing extracted/ (default: data/pubmed/extracted)",
     )
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("data/pmcoa/papers.jsonl"),
-        help="Output JSONL file (default: data/pmcoa/papers.jsonl)",
+        default=Path("data/pubmed/papers.jsonl"),
+        help="Output JSONL file (default: data/pubmed/papers.jsonl)",
     )
     parser.add_argument(
         "--debug",
@@ -58,7 +59,7 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help=(
             "Log file path. By default, logs are written under "
-            "logs/pmcoa/<timestamp>-parse-xml-to-jsonl.log"
+            "logs/pubmed/<timestamp>-parse-xml-to-jsonl.log"
         ),
     )
     parser.add_argument(
@@ -96,19 +97,49 @@ def parse_args() -> argparse.Namespace:
         help="Number of worker processes to parse XML files in parallel (default: 1)",
     )
     parser.add_argument(
-        "--split",
-        type=int,
+        "--pmc-ids-db",
+        type=Path,
         default=None,
+        help=(
+            "Optional path to a compiled PMC-ids SQLite DB (see "
+            "scripts/pubmed/build-pmc-id-db.py). When provided, both the "
+            "paper's own ids and its bibliography entries are backfilled "
+            "from this crosswalk (lookup works by PMCID, PMID, or DOI). "
+            "Ids extracted from the XML always take precedence."
+        ),
+    )
+    parser.add_argument(
+        "--max-tasks-per-child",
+        type=int,
+        default=500,
+        help=(
+            "Recycle each worker after this many XML files to bound memory "
+            "growth from spaCy/lxml/thinc caches and heap fragmentation. "
+            "Forking a replacement is cheap because spaCy is already loaded "
+            "in the parent (copy-on-write). Set to 0 to disable recycling. "
+            "Default: 500."
+        ),
     )
     return parser.parse_args()
 
 
-def _process_single_xml(
-    xml_path: str,
-    tokenizer: SentenceTokenizer,
-) -> tuple[str, str | None, str | None]:
+_WORKER_TOKENIZER: SentenceTokenizer | None = None
+_WORKER_PMC_ID_MAP: PmcIdMap | None = None
+
+
+def _init_worker(tokenizer: SentenceTokenizer) -> None:
+    """Store the tokenizer on a module global so workers don't have to receive
+    it (and pickle it) on every task submitted through the pool's queue."""
+    global _WORKER_TOKENIZER
+    _WORKER_TOKENIZER = tokenizer
+
+
+def _process_single_xml(xml_path: str) -> tuple[str, str | None, str | None]:
+    assert _WORKER_TOKENIZER is not None, "worker tokenizer not initialized"
     try:
-        paper = PaperParser(tokenizer).parse(xml_path)
+        paper = PaperParser(
+            _WORKER_TOKENIZER, pmc_id_map=_WORKER_PMC_ID_MAP
+        ).parse(xml_path)
         return xml_path, paper.model_dump_json(), None
     except Exception as e:
         return xml_path, None, str(e)
@@ -118,7 +149,7 @@ def main() -> None:
     args = parse_args()
 
     script_name = Path(__file__).stem
-    log_path = Path("logs/pmcoa") / f"{script_name}.log"
+    log_path = Path("logs/pubmed") / f"{script_name}.log"
     setup_logging(log_path)
     logger = logging.getLogger(__name__)
     logger.info("Starting parse-xml-to-jsonl")
@@ -132,6 +163,10 @@ def main() -> None:
         max_length=args.spacy_max_length,
     )
 
+    if args.pmc_ids_db is not None:
+        global _WORKER_PMC_ID_MAP
+        _WORKER_PMC_ID_MAP = PmcIdMap(args.pmc_ids_db)
+
     base = args.xml_dir.resolve()
     xml_filepaths = sorted(str(p) for p in base.rglob("*.xml"))
     if not xml_filepaths:
@@ -142,12 +177,6 @@ def main() -> None:
         xml_filepaths = xml_filepaths[1000:2000]
         logger.info("Debug mode: only processing the first few XML files")
 
-    if isinstance(args.split, int):
-        start = args.split * 1000000
-        end = start + 1000000
-        logger.info(f"Working on filepaths #{start}:{end}")
-        xml_filepaths = xml_filepaths[start:end]
-
     logger.info(f"Found {len(xml_filepaths)} XML files; writing to {args.output}")
     args.output.parent.mkdir(parents=True, exist_ok=True)
 
@@ -155,8 +184,9 @@ def main() -> None:
         written = 0
         skipped = 0
         if args.workers <= 1:
+            _init_worker(tokenizer)
             for xml_filepath in tqdm(xml_filepaths):
-                _, paper, error = _process_single_xml(xml_filepath, tokenizer)
+                _, paper, error = _process_single_xml(xml_filepath)
                 if paper is not None:
                     f.write(paper + "\n")
                     written += 1
@@ -164,12 +194,19 @@ def main() -> None:
                     skipped += 1
                     logger.warning(f"Skip #{skipped}: {xml_filepath}: {error}")
         else:
-            logger.info(f"Using {args.workers} worker processes for parsing")
+            logger.info(
+                f"Using {args.workers} worker processes "
+                f"(maxtasksperchild={args.max_tasks_per_child or 'unbounded'})"
+            )
             ctx = mp.get_context("fork")
-            with ctx.Pool(processes=args.workers) as pool:
-                worker_fn = partial(_process_single_xml, tokenizer=tokenizer)
+            with ctx.Pool(
+                processes=args.workers,
+                initializer=_init_worker,
+                initargs=(tokenizer,),
+                maxtasksperchild=args.max_tasks_per_child or None,
+            ) as pool:
                 iterator = pool.imap_unordered(
-                    worker_fn,
+                    _process_single_xml,
                     iter(xml_filepaths),
                     chunksize=5,
                 )
