@@ -1,2 +1,0 @@
-2026-04-17 17:09:02 INFO Starting parse-xml-to-jsonl
-2026-04-17 17:09:02 INFO Arguments: Namespace(xml_dir=PosixPath('data/pubmed/raw'), output=PosixPath('data/pubmed/papers.jsonl'), debug=False, log_file=None, spacy_model='en_core_web_sm', spacy_batch_size=32, spacy_n_process=1, spacy_max_length=None, workers=20, max_tasks_per_child=500)

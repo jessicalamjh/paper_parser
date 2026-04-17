@@ -1,76 +1,151 @@
 """Utility functions for PubMed/PMC XML parsing."""
 
-from lxml import etree
 import os
-import regex as re
+
+from lxml import etree
 
 from paper_parser.shared.schemas import DEFAULT_REF_TYPE
 
-def describe_source(x: str | etree.ElementTree) -> str:
-    """Best-effort human-readable description of the XML source."""
-    if isinstance(x, str):
-        return x
-    return f"<{type(x).__name__}>"
+
+# Element tags whose entire subtree is "noise" we don't want in the reading
+# text: footnote bodies, author notes, table footers. These are usually in
+# <back> or inside <table-wrap>, but can also appear inline inside a <p>.
+_NOISE_TAGS: frozenset[str] = frozenset({
+    "fn",
+    "fn-group",
+    "author-notes",
+    "table-wrap-foot",
+})
+
+# xref ref-type values that mark footnote-like citations (not real refs to
+# figures/tables/bib entries). Stripping these removes the inline marker
+# (e.g. a superscript "1") so it doesn't confuse ref-localization.
+_NOISE_XREF_REF_TYPES: frozenset[str] = frozenset({
+    "fn",
+    "table-fn",
+    "author-notes",
+})
 
 
-def build_xml_tree(x: str | etree.ElementTree) -> etree.ElementTree:
-    """Build an XML tree from a filepath or XML string.
-    
-    Args:
-        x: Path to XML file or XML content as string
-        
-    Returns:
-        Parsed XML tree
-        
-    Raises:
-        ValueError: If input is not a string or is empty
+def _local_tag(el: etree._Element) -> str:
+    """Return an element's tag without its XML namespace prefix.
+
+    lxml reports tags as ``{namespace}name`` when a namespace is present.
+    For JATS PMC XML we only care about the local name, so this helper
+    strips the namespace part if any.
     """
-    if isinstance(x, etree.ElementTree):
+    tag = el.tag
+    if isinstance(tag, str) and tag.startswith("{"):
+        return tag.split("}", 1)[1]
+    return tag or ""
+
+
+def _find_child(parent: etree._Element, local_name: str) -> etree._Element | None:
+    """Return the first direct child of ``parent`` with the given local tag.
+
+    This is a namespace-agnostic equivalent of ``parent.find(local_name)``:
+    useful for JATS where elements may or may not carry a namespace prefix
+    depending on the source document.
+    """
+    for child in parent:
+        if _local_tag(child) == local_name:
+            return child
+    return None
+
+
+def build_xml_tree(x: str | etree._ElementTree) -> etree._ElementTree:
+    """Parse a PMC JATS XML source into an ``ElementTree``.
+
+    Accepts a filepath, an XML string, or an already-parsed
+    ``ElementTree`` (returned as-is). Ensures the ``xlink`` namespace is
+    declared on the root so downstream XPath/attribute lookups work
+    regardless of the source document.
+    """
+    if isinstance(x, etree._ElementTree):
         return x
-    
+
     if not isinstance(x, str) or not x.strip():
-        raise ValueError("Input must be a non-empty string containing a filepath or XML content")
+        raise ValueError(
+            "Input must be a non-empty string containing a filepath or XML content"
+        )
 
     if os.path.isfile(x):
-        x_string = open(x, 'r').read()
+        with open(x, "r") as f:
+            x_string = f.read()
     else:
         x_string = x
 
-    # Check whether xlink namespace is defined, adding if necessary
     parser = etree.XMLParser(recover=True)
     root = etree.fromstring(x_string.encode("utf-8"), parser)
     if "xlink" not in root.nsmap:
         root.set(
             "{http://www.w3.org/2000/xmlns/}xlink",
-            "http://www.w3.org/1999/xlink"
+            "http://www.w3.org/1999/xlink",
         )
     return etree.ElementTree(root)
 
 
-def get_xml_root(x: str | etree.ElementTree) -> etree.Element:
-    """Get the root element of an XML tree."""
+def strip_noise(root: etree._Element) -> None:
+    """Remove footnote-like subtrees from ``root`` in place, preserving tails.
+
+    - ``<fn>``, ``<fn-group>``, ``<author-notes>``, ``<table-wrap-foot>`` are
+      dropped entirely (body + any marker text).
+    - ``<xref>`` whose ``ref-type`` is footnote-like (``fn``, ``table-fn``,
+      ``author-notes``) is dropped; the numeric marker inside (e.g.
+      ``<sup>1</sup>``) goes with it.
+
+    The removed element's tail text is merged back into the preceding
+    sibling's tail, or into the parent's text if there is no preceding
+    sibling, so surrounding prose stays intact.
+    """
+    to_remove: list[etree._Element] = []
+    for el in root.iter():
+        tag = _local_tag(el)
+        if tag in _NOISE_TAGS:
+            to_remove.append(el)
+        elif tag == "xref":
+            rt = (el.attrib.get("ref-type") or "").strip().lower()
+            if rt in _NOISE_XREF_REF_TYPES:
+                to_remove.append(el)
+
+    for el in to_remove:
+        parent = el.getparent()
+        if parent is None:
+            # Already detached because an ancestor was removed earlier.
+            continue
+        tail = el.tail
+        if tail:
+            idx = parent.index(el)
+            if idx > 0:
+                sib = parent[idx - 1]
+                sib.tail = (sib.tail or "") + tail
+            else:
+                parent.text = (parent.text or "") + tail
+        parent.remove(el)
+
+
+def get_xml_root(x: str | etree._ElementTree) -> etree._Element:
+    """Get the root element of an XML tree, building one if needed."""
     return build_xml_tree(x).getroot()
 
-def strip_whitespace(x: str) -> str:
-    """Strip whitespace from a string."""
-    return x.strip()
 
-
-def stringify(node: etree.Element, recurse: bool = True, delimiter: str | None = None) -> str | list[str]:
+def stringify(
+    node: etree._Element, recurse: bool = True, delimiter: str | None = None
+) -> str | list[str]:
     """Convert XML node to string or list of strings.
-    
+
     Args:
         node: XML element to stringify
         recurse: Whether to recursively process child nodes
         delimiter: If provided, join parts with this delimiter (returns str).
                    If None, returns list of strings.
-    
+
     Returns:
         String if delimiter is provided, otherwise list of strings
     """
     if node is None:
         return ""
-    
+
     parts = []
     if node.text:
         parts.append(node.text)
@@ -81,52 +156,20 @@ def stringify(node: etree.Element, recurse: bool = True, delimiter: str | None =
                 parts.append(child.tail)
     if isinstance(delimiter, str):
         return delimiter.join(parts)
-    else:
-        return parts
+    return parts
 
 
-def deduplicate(x: list | tuple, keep_order: bool = False) -> list:
-    """Remove duplicates from a list or tuple.
-    
-    Args:
-        x: List or tuple to deduplicate
-        keep_order: If True, preserve original order
-        
-    Returns:
-        List with duplicates removed
-    """
-    if keep_order:
-        temp = set()
-        out = []
-        for item in x:
-            if item not in temp:
-                out.append(item)
-                temp.add(item)
-        return out
-    else:
-        return list(set(x))
-
-
-def get_xml_lang(node: etree.Element) -> str | None:
-    """Get language attribute from XML node.
-    
-    Tries xml:lang first, then lang attribute.
-    
-    Args:
-        node: XML element
-        
-    Returns:
-        Language code or None if not found
-    """
+def get_xml_lang(node: etree._Element) -> str | None:
+    """Return the language of an XML node (``xml:lang`` or ``lang``)."""
     return node.get("xml:lang") or node.get("lang")
 
 
-MONTH_NAME_TO_NUMBER_MAP = {
+MONTH_NAME_TO_NUMBER_MAP: dict[str, int] = {
     "january": 1, "jan": 1,
     "february": 2, "feb": 2,
     "march": 3, "mar": 3,
     "april": 4, "apr": 4,
-    "may": 5, 
+    "may": 5,
     "june": 6, "jun": 6,
     "july": 7, "jul": 7,
     "august": 8, "aug": 8,
@@ -138,17 +181,7 @@ MONTH_NAME_TO_NUMBER_MAP = {
 
 
 def convert_month_name_to_number(month_name: str) -> int:
-    """Convert month name to number.
-    
-    Args:
-        month_name: Month name (case-insensitive)
-        
-    Returns:
-        Month number (1-12)
-        
-    Raises:
-        KeyError: If month name is not recognized
-    """
+    """Convert a case-insensitive month name to its 1-12 number."""
     return MONTH_NAME_TO_NUMBER_MAP[month_name.lower()]
 
 
@@ -168,24 +201,3 @@ def normalize_pmcoa_ref_type(
     if not rt:
         return None
     return PMCOA_XREF_REF_TYPE_MAP.get(rt, default_ref_type)
-
-
-def _local_tag(el: etree._Element) -> str:
-    """Return local tag name without namespace. Handles lxml QName (callable .tag)."""
-    tag = el.tag
-    if callable(tag):
-        try:
-            tag = tag()
-        except TypeError:
-            tag = getattr(tag, "__name__", None)
-    tag = str(tag)
-    return tag.split("}")[-1] if "}" in tag else tag
-
-
-def _find_child(parent: etree._Element, local_name: str) -> etree._Element | None:
-    """Find direct child element by local tag name (ignores namespace)."""
-    for child in parent:
-        if _local_tag(child) == local_name:
-            return child
-    return None
-

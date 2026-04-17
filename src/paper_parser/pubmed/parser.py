@@ -44,6 +44,7 @@ from paper_parser.pubmed.utils import (
     _find_child,
     _local_tag,
     build_xml_tree,
+    strip_noise,
     convert_month_name_to_number,
     get_xml_lang,
     get_xml_root,
@@ -314,6 +315,9 @@ def allocate_refs_for_paragraph_to_sentences(
         ):
             break
 
+    while len(refs_per_sentence) < len(sentence_spans):
+        refs_per_sentence.append([])
+
     return refs_per_sentence, sentence_spans
 
 
@@ -407,7 +411,9 @@ class PaperParser:
         self._pmc_id_map = pmc_id_map
 
     def parse(self, x: str | etree._ElementTree | Path) -> Paper:
-        tree = build_xml_tree(x) if not isinstance(x, Path) else build_xml_tree(str(x))
+        src = str(x) if isinstance(x, Path) else x
+        tree = build_xml_tree(src)
+        strip_noise(tree.getroot())
 
         main_id = (
             extract_pmc_id_from_path(x) if isinstance(x, (str, Path)) else None
@@ -623,8 +629,11 @@ class PaperParser:
     ) -> None:
         """Record a tokenization job for ``container`` sourced from ``p_el``.
 
-        If ``p_el`` has no non-whitespace text, the container keeps its empty
-        placeholder sentence and no job is enqueued.
+        Footnote-like content has already been stripped from the whole XML
+        tree at the top of ``parse``, so this helper can treat ``p_el`` as
+        reading-text only. If the paragraph has no non-whitespace text, the
+        container keeps its empty placeholder sentence and no job is
+        enqueued.
         """
         text_parts = [" ".join(x.split()).strip() for x in stringify(p_el)]
         text_parts = [x for x in text_parts if x]

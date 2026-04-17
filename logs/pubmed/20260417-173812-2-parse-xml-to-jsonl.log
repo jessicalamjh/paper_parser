@@ -1,4 +1,0 @@
-2026-04-17 17:38:12 INFO Starting parse-xml-to-jsonl
-2026-04-17 17:38:12 INFO Arguments: Namespace(xml_dir=PosixPath('sample_data/pubmed/raw'), output=PosixPath('sample_data/pubmed/papers.jsonl'), debug=False, log_file=None, spacy_model='en_core_web_sm', spacy_batch_size=32, spacy_n_process=1, spacy_max_length=None, workers=1, pmc_ids_db=PosixPath('data/pubmed/PMC-ids.sqlite'), max_tasks_per_child=500)
-2026-04-17 17:38:12 INFO Found 1 XML files; writing to sample_data/pubmed/papers.jsonl
-2026-04-17 17:38:12 INFO Wrote 1 papers to sample_data/pubmed/papers.jsonl (0 skipped)

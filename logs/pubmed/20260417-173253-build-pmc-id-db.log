@@ -1,6 +1,0 @@
-2026-04-17 17:32:53 INFO Starting build-pmc-id-db
-2026-04-17 17:32:53 INFO Arguments: Namespace(csv=PosixPath('data/pubmed/PMC-ids.csv'), db=PosixPath('data/pubmed/PMC-ids.sqlite'), overwrite=False, log_file=None)
-2026-04-17 17:32:53 INFO Building PMC-ids DB at data/pubmed/PMC-ids.sqlite from data/pubmed/PMC-ids.csv
-2026-04-17 17:33:35 INFO Creating indexes (this can take a few minutes)...
-2026-04-17 17:33:54 INFO PMC-ids DB ready at data/pubmed/PMC-ids.sqlite
-2026-04-17 17:33:54 INFO Done. DB written to data/pubmed/PMC-ids.sqlite
