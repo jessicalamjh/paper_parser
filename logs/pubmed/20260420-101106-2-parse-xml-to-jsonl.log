@@ -1,0 +1,40 @@
+2026-04-20 10:11:06 INFO Starting parse-xml-to-jsonl
+2026-04-20 10:11:06 INFO Arguments: Namespace(xml_dir=PosixPath('data/pubmed/raw'), output=PosixPath('data/pubmed/papers.jsonl'), debug=False, log_file=None, spacy_model='en_core_web_sm', spacy_batch_size=32, spacy_n_process=1, spacy_max_length=None, workers=20, pmc_ids_db=PosixPath('data/pubmed/PMC-ids.sqlite'), max_tasks_per_child=500)
+2026-04-20 10:11:21 INFO Found 7533058 XML files; writing to data/pubmed/papers.jsonl
+2026-04-20 10:11:21 INFO Using 20 worker processes (maxtasksperchild=500)
+2026-04-20 11:59:16 WARNING Skipping invalid doi '10.46883.2022.25920946' (looked up via pmid='35180337'): 1 validation error for PaperId
+  Value error, DOI must contain '/', got 10.46883.2022.25920946 [type=value_error, input_value={'id_type': 'doi', 'value...10.46883.2022.25920946'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.13/v/value_error
+2026-04-20 12:03:21 WARNING Skipping invalid doi '10.46883.2022.25920946' (looked up via pmid='35180337'): 1 validation error for PaperId
+  Value error, DOI must contain '/', got 10.46883.2022.25920946 [type=value_error, input_value={'id_type': 'doi', 'value...10.46883.2022.25920946'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.13/v/value_error
+2026-04-20 12:06:23 WARNING Skipping invalid doi '10.46883.2022.25920946' (looked up via pmid='35180337'): 1 validation error for PaperId
+  Value error, DOI must contain '/', got 10.46883.2022.25920946 [type=value_error, input_value={'id_type': 'doi', 'value...10.46883.2022.25920946'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.13/v/value_error
+2026-04-20 12:08:30 WARNING Skipping invalid doi '10.46883.2022.25920946' (looked up via pmid='35180337'): 1 validation error for PaperId
+  Value error, DOI must contain '/', got 10.46883.2022.25920946 [type=value_error, input_value={'id_type': 'doi', 'value...10.46883.2022.25920946'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.13/v/value_error
+2026-04-20 12:37:52 WARNING Skipping invalid doi '10.46883.2022.25920946' (looked up via pmid='35180337'): 1 validation error for PaperId
+  Value error, DOI must contain '/', got 10.46883.2022.25920946 [type=value_error, input_value={'id_type': 'doi', 'value...10.46883.2022.25920946'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.13/v/value_error
+2026-04-20 12:51:12 WARNING Skipping invalid doi '10.46883.2022.25920946' (looked up via pmid='35180337'): 1 validation error for PaperId
+  Value error, DOI must contain '/', got 10.46883.2022.25920946 [type=value_error, input_value={'id_type': 'doi', 'value...10.46883.2022.25920946'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.13/v/value_error
+2026-04-20 13:39:38 WARNING Skipping invalid doi '10.46883.2022.25920946' (looked up via pmid='35180337'): 1 validation error for PaperId
+  Value error, DOI must contain '/', got 10.46883.2022.25920946 [type=value_error, input_value={'id_type': 'doi', 'value...10.46883.2022.25920946'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.13/v/value_error
+2026-04-20 13:42:34 WARNING Skipping invalid doi '10.46883.2022.25920946' (looked up via pmid='35180337'): 1 validation error for PaperId
+  Value error, DOI must contain '/', got 10.46883.2022.25920946 [type=value_error, input_value={'id_type': 'doi', 'value...10.46883.2022.25920946'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.13/v/value_error
+2026-04-20 13:51:52 WARNING Skip #1: /media/jessica/bigdata/PMCOA/raw/oa_noncomm/PMC011xxxxxx/PMC11365990.xml: [E088] Text of length 1249958 exceeds maximum of 1000000. The parser and NER models require roughly 1GB of temporary memory per 100,000 characters in the input. This means long texts may cause memory allocation errors. If you're not using the parser or NER, it's probably safe to increase the `nlp.max_length` limit. The limit is in number of characters, so you can check whether your inputs are too long by checking `len(text)`.
+2026-04-20 13:52:07 WARNING Skip #2: /media/jessica/bigdata/PMCOA/raw/oa_noncomm/PMC011xxxxxx/PMC11384009.xml: [E088] Text of length 1255126 exceeds maximum of 1000000. The parser and NER models require roughly 1GB of temporary memory per 100,000 characters in the input. This means long texts may cause memory allocation errors. If you're not using the parser or NER, it's probably safe to increase the `nlp.max_length` limit. The limit is in number of characters, so you can check whether your inputs are too long by checking `len(text)`.
+2026-04-20 14:03:40 WARNING Skipping invalid doi '10.46883.2022.25920946' (looked up via pmid='35180337'): 1 validation error for PaperId
+  Value error, DOI must contain '/', got 10.46883.2022.25920946 [type=value_error, input_value={'id_type': 'doi', 'value...10.46883.2022.25920946'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.13/v/value_error
+2026-04-20 14:04:03 WARNING Skip #3: /media/jessica/bigdata/PMCOA/raw/oa_noncomm/PMC012xxxxxx/PMC12334775.xml: [E088] Text of length 1705734 exceeds maximum of 1000000. The parser and NER models require roughly 1GB of temporary memory per 100,000 characters in the input. This means long texts may cause memory allocation errors. If you're not using the parser or NER, it's probably safe to increase the `nlp.max_length` limit. The limit is in number of characters, so you can check whether your inputs are too long by checking `len(text)`.
+2026-04-20 14:04:41 WARNING Skipping invalid doi '10.46883.2022.25920946' (looked up via pmid='35180337'): 1 validation error for PaperId
+  Value error, DOI must contain '/', got 10.46883.2022.25920946 [type=value_error, input_value={'id_type': 'doi', 'value...10.46883.2022.25920946'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.13/v/value_error
+2026-04-20 14:05:00 WARNING Skip #4: /media/jessica/bigdata/PMCOA/raw/oa_noncomm/PMC012xxxxxx/PMC12411647.xml: [E088] Text of length 3087603 exceeds maximum of 1000000. The parser and NER models require roughly 1GB of temporary memory per 100,000 characters in the input. This means long texts may cause memory allocation errors. If you're not using the parser or NER, it's probably safe to increase the `nlp.max_length` limit. The limit is in number of characters, so you can check whether your inputs are too long by checking `len(text)`.
+2026-04-20 14:21:13 WARNING Skip #5: /media/jessica/bigdata/PMCOA/raw/oa_other/PMC009xxxxxx/PMC9771676.xml: [E088] Text of length 1018604 exceeds maximum of 1000000. The parser and NER models require roughly 1GB of temporary memory per 100,000 characters in the input. This means long texts may cause memory allocation errors. If you're not using the parser or NER, it's probably safe to increase the `nlp.max_length` limit. The limit is in number of characters, so you can check whether your inputs are too long by checking `len(text)`.
+2026-04-20 14:22:07 INFO Wrote 7533053 papers to data/pubmed/papers.jsonl (5 skipped)
