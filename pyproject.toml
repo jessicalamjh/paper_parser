@@ -69,5 +69,7 @@ include = [
 
 [dependency-groups]
 dev = [
+    "ipykernel>=7.2.0",
     "ipython>=9.12.0",
+    "ipywidgets>=8.1.8",
 ]
