@@ -1,0 +1,5 @@
+2026-04-21 17:29:08 INFO Starting extract-split-metadata
+2026-04-21 17:29:08 INFO Arguments: Namespace(xml_dir=PosixPath('data/pubmed/raw'), output=PosixPath('data/pubmed/split_metadata.jsonl'), workers=20, max_tasks_per_child=2000, debug=False, log_file=None)
+2026-04-21 17:29:20 INFO Found 7533058 XML files; writing to data/pubmed/split_metadata.jsonl
+2026-04-21 17:29:20 INFO Using 20 worker processes (maxtasksperchild=2000)
+2026-04-21 17:55:42 INFO Wrote 7533058 records to data/pubmed/split_metadata.jsonl (0 skipped)
