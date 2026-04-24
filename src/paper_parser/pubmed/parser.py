@@ -83,6 +83,9 @@ def extract_paper_ids(x: str | etree._ElementTree) -> list[PaperId]:
 
 def extract_pmc_id_from_path(path: str | Path) -> PaperId | None:
     stem = Path(path).stem
+    # filepath sometimes has a version number suffix
+    if "." in stem:
+        stem = stem.split(".")[0]
     digits = "".join(c for c in stem if c.isdigit())
     return PaperId(id_type="pmc", value=f"PMC{digits}") if digits else None
 
