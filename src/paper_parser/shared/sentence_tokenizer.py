@@ -116,10 +116,13 @@ class SpacySentenceTokenizer(SentenceTokenizer):
 
 
 def get_sentence_tokenizer(
-    engine: Literal["spacy", "regex"] = "spacy",
+    engine: Literal["spacy", "regex"] = "regex",
     **kwargs,
 ) -> SentenceTokenizer:
     """Factory for sentence tokenizers.
+
+    Default is ``regex`` so the core package does not require spaCy. Use
+    ``engine="spacy"`` after installing ``paper-parser[spacy]`` (and a model).
 
     - engine="spacy": uses SpacySentenceTokenizer (requires spaCy installed)
         Supported kwargs include:
