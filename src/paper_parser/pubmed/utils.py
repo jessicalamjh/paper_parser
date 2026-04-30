@@ -203,7 +203,6 @@ def expand_bibr_citation_ranges(
             prefix = ra[0]
             inferred = [f"{prefix}{k}" for k in range(n + 1, m_hi)]
             if not inferred or not all(r in bib_keys for r in inferred):
-                print("oopsie")
                 i -= 1
                 continue
             sep = _BIBR_EXPAND_SEP
