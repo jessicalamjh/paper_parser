@@ -1,6 +1,8 @@
 """Utility functions for PubMed/PMC XML parsing."""
 
 import os
+import re
+from collections.abc import Mapping
 
 from lxml import etree
 
@@ -25,6 +27,12 @@ _NOISE_XREF_REF_TYPES: frozenset[str] = frozenset({
     "table-fn",
     "author-notes",
 })
+
+# Tail between two sibling bibliography xrefs when the author wrote a range (e.g. 1–5).
+_BIBR_RANGE_TAIL_RE = re.compile(r"^[\s\-–—‐]+$")
+
+# Separator inserted between every citation mark when a range is expanded (canonical ", ").
+_BIBR_EXPAND_SEP = ", "
 
 
 def _local_tag(el: etree._Element) -> str:
@@ -122,6 +130,90 @@ def strip_noise(root: etree._Element) -> None:
             else:
                 parent.text = (parent.text or "") + tail
         parent.remove(el)
+
+
+def _is_bibr_xref(el: etree._Element) -> bool:
+    if _local_tag(el) != "xref":
+        return False
+    rt = (el.attrib.get("ref-type") or "").strip().lower()
+    return rt == "bibr"
+
+
+def _citation_mark_int(el: etree._Element) -> int | None:
+    raw = stringify(el, delimiter="", recurse=True).strip()
+    if re.fullmatch(r"\d+", raw):
+        return int(raw)
+    return None
+
+
+def _rid_prefix_and_suffix_int(rid: str | None) -> tuple[str, int] | None:
+    if not rid:
+        return None
+    rid = rid.strip()
+    m = re.match(r"^(.*?)(\d+)$", rid)
+    if not m:
+        return None
+    return m.group(1), int(m.group(2))
+
+
+def _bibr_xref_like(template: etree._Element, rid: str, text: str) -> etree._Element:
+    el = etree.Element(template.tag)
+    for k, v in template.attrib.items():
+        el.set(k, v)
+    el.set("rid", rid)
+    el.text = text
+    el.tail = None
+    return el
+
+
+def expand_bibr_citation_ranges(
+    root: etree._Element, bibliography: Mapping[str, object]
+) -> None:
+    """Insert bibliography ``<xref>`` nodes for implied refs inside a numeric range.
+
+    Only handles **two sibling** ``bibr`` xrefs (first and last marker), with a dash-like
+    tail between them. Inferred ``rid`` values for inserted nodes must appear as keys in
+    ``bibliography`` (from ``back/ref-list/ref/@id``); otherwise the range is left unchanged.
+    """
+    bib_keys = bibliography.keys()
+    for parent in list(root.iter()):
+        if len(parent) < 2:
+            continue
+        i = len(parent) - 2
+        while i >= 0:
+            a = parent[i]
+            b = parent[i + 1]
+            if not (_is_bibr_xref(a) and _is_bibr_xref(b)):
+                i -= 1
+                continue
+            tail = a.tail or ""
+            if not _BIBR_RANGE_TAIL_RE.fullmatch(tail):
+                i -= 1
+                continue
+            n = _citation_mark_int(a)
+            m_hi = _citation_mark_int(b)
+            if n is None or m_hi is None or m_hi <= n + 1:
+                i -= 1
+                continue
+            ra = _rid_prefix_and_suffix_int(a.attrib.get("rid"))
+            rb = _rid_prefix_and_suffix_int(b.attrib.get("rid"))
+            if not ra or not rb or ra[0] != rb[0] or ra[1] != n or rb[1] != m_hi:
+                i -= 1
+                continue
+            prefix = ra[0]
+            inferred = [f"{prefix}{k}" for k in range(n + 1, m_hi)]
+            if not inferred or not all(r in bib_keys for r in inferred):
+                print("oopsie")
+                i -= 1
+                continue
+            sep = _BIBR_EXPAND_SEP
+            a.tail = sep
+            insert_at = parent.index(b)
+            for off, k in enumerate(range(n + 1, m_hi)):
+                node = _bibr_xref_like(a, f"{ra[0]}{k}", str(k))
+                node.tail = sep
+                parent.insert(insert_at + off, node)
+            i -= 1
 
 
 def get_xml_root(x: str | etree._ElementTree) -> etree._Element:

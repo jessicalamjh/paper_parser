@@ -419,7 +419,20 @@ class PaperParser:
         tree = build_xml_tree(src)
         root_el = tree.getroot()
         strip_noise(root_el)
-        expand_bibr_citation_ranges(root_el)
+
+        try:
+            bibliography = extract_bibliography(tree)
+        except Exception as e:
+            logger.warning(
+                f"Failed to extract bibliography; source={x=}; using default. error={e}"
+            )
+            bibliography = {}
+
+        if self._pmc_id_map is not None:
+            for entry in bibliography.values():
+                entry.all_paper_ids = self._pmc_id_map.augment(entry.all_paper_ids)
+
+        expand_bibr_citation_ranges(root_el, bibliography)
 
         main_id = (
             extract_pmc_id_from_path(x) if isinstance(x, (str, Path)) else None
@@ -469,21 +482,6 @@ class PaperParser:
                 f"Failed to extract title; source={x=}; using default. error={e}"
             )
             title = Sentence(content_id=["title", 0], text="")
-
-        try:
-            bibliography = extract_bibliography(tree)
-        except Exception as e:
-            logger.warning(
-                f"Failed to extract bibliography; source={x=}; using default. error={e}"
-            )
-            bibliography = {}
-
-        # Backfill bibliography entries too: references often have just one
-        # of {pmc, pmid, doi}, and callers downstream benefit from having
-        # all three available.
-        if self._pmc_id_map is not None:
-            for entry in bibliography.values():
-                entry.all_paper_ids = self._pmc_id_map.augment(entry.all_paper_ids)
 
         root = get_xml_root(tree)
         jobs: list[_TokenizeJob] = []
