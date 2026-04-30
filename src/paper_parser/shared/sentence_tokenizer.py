@@ -122,7 +122,7 @@ def get_sentence_tokenizer(
     """Factory for sentence tokenizers.
 
     Default is ``regex`` so the core package does not require spaCy. Use
-    ``engine="spacy"`` after installing ``paper-parser[spacy]`` (and a model).
+    ``engine="spacy"`` after installing ``hierarchical-paper-parser[spacy]`` (and a model).
 
     - engine="spacy": uses SpacySentenceTokenizer (requires spaCy installed)
         Supported kwargs include:

@@ -1,7 +1,7 @@
 """PubMed/PMC JATS XML parser."""
 
-from paper_parser.pubmed import parser, utils
-from paper_parser.pubmed.parser import (
+from . import parser, utils
+from .parser import (
     PaperParser,
     extract_bibliography,
     extract_paper,
@@ -12,7 +12,7 @@ from paper_parser.pubmed.parser import (
     extract_subjects,
     extract_title_sentence,
 )
-from paper_parser.pubmed.pmc_id_map import PmcIdMap
+from .pmc_id_map import PmcIdMap
 
 __all__ = [
     "parser",

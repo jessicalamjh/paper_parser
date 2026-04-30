@@ -1,4 +1,6 @@
-# paper_parser
+# hierarchical-paper-parser
+
+Python import name: **`paper_parser`**.
 
 Parse scientific papers from multiple sources into one shared [Pydantic](https://docs.pydantic.dev/) schema so downstream code can treat PMC, arXiv, and future sources the same way.
 
@@ -24,10 +26,10 @@ Optional **`PmcIdMap`** loads an SQLite crosswalk built from NCBI’s [PMC-ids](
 
 ## Installation
 
-From [PyPI](https://pypi.org/project/paper-parser/):
+From [PyPI](https://pypi.org/project/hierarchical-paper-parser/):
 
 ```bash
-pip install paper-parser
+pip install hierarchical-paper-parser
 ```
 
 Requires **Python 3.12+**. The default install pulls in **`lxml`**, **`pydantic`**, and **`tqdm`** only.
@@ -44,8 +46,8 @@ Optional extras:
 Examples:
 
 ```bash
-pip install "paper-parser[spacy]"
-pip install "paper-parser[notebook,dev]"   # local exploration + tests
+pip install "hierarchical-paper-parser[spacy]"
+pip install "hierarchical-paper-parser[notebook,dev]"   # local exploration + tests
 ```
 
 For local development:
@@ -87,7 +89,7 @@ print(paper.pub_date.year if paper.pub_date else None)
 Using spaCy (install the extra and a model):
 
 ```bash
-pip install "paper-parser[spacy]"
+pip install "hierarchical-paper-parser[spacy]"
 python -m spacy download en_core_web_sm
 ```
 
@@ -157,7 +159,7 @@ Batch utilities (JSONL export, building the PMC id DB, etc.) live under **`scrip
    python -m build
    ```
 
-   This produces `dist/paper_parser-<version>-py3-none-any.whl` and `dist/paper_parser-<version>.tar.gz`.
+   This produces `dist/hierarchical_paper_parser-<version>-py3-none-any.whl` and `dist/hierarchical_paper_parser-<version>.tar.gz`.
 
 3. Upload to the real index (use a [PyPI API token](https://pypi.org/help/#apitoken)):
 

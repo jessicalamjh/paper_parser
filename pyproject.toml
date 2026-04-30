@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "paper-parser"
-version = "0.1.0"
+name = "hierarchical-paper-parser"
+version = "0.1.1"
 description = "Parse scientific papers from multiple sources (PubMed Central, arXiv, ...) into a common schema."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -13,6 +13,7 @@ authors = [
     { name = "Jessica Lam", email = "contact@jessicalam.io" },
 ]
 keywords = [
+    "hierarchical",
     "pubmed",
     "pmc",
     "arxiv",
@@ -34,8 +35,10 @@ classifiers = [
     "Topic :: Text Processing :: Markup :: XML",
 ]
 dependencies = [
+    "click>=8.0,<8.2",
     "lxml>=5.0",
     "pydantic>=2.0",
+    "spacy>=3.8.14",
     "tqdm>=4.66",
 ]
 
@@ -65,7 +68,7 @@ publish = [
 Homepage = "https://github.com/jessicalamjh/paper_parser"
 Repository = "https://github.com/jessicalamjh/paper_parser"
 Issues = "https://github.com/jessicalamjh/paper_parser/issues"
-PyPI = "https://pypi.org/project/paper-parser/"
+PyPI = "https://pypi.org/project/hierarchical-paper-parser/"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/paper_parser"]
