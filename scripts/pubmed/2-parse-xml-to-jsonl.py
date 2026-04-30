@@ -7,12 +7,13 @@ Usage (from project root):
 
 ```bash
 uv run python scripts/pubmed/2-parse-xml-to-jsonl.py \
-  --xml-dir data/pubmed/raw \
-  --output data/pubmed/papers.jsonl \
+  --xml-dir data/pubmed-2026/ \
+  --output data/pubmed/papers-2026.jsonl \
   --spacy-model en_core_web_sm \
   --spacy-batch-size 32 \
   --spacy-n-process 1 \
   --workers 20 \
+  --spacy-max-length 2000000 \
   --pmc-ids-db data/pubmed/PMC-ids.sqlite
 ```
 """
@@ -168,7 +169,7 @@ def main() -> None:
         _WORKER_PMC_ID_MAP = PmcIdMap(args.pmc_ids_db)
 
     base = args.xml_dir.resolve()
-    xml_filepaths = sorted(str(p) for p in base.rglob("*.xml"))
+    xml_filepaths = sorted(str(p) for p in base.rglob("PMC*.xml"))
     if not xml_filepaths:
         logger.warning(f"No XML files under {base}")
         return
