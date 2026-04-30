@@ -44,6 +44,7 @@ from paper_parser.pubmed.utils import (
     _find_child,
     _local_tag,
     build_xml_tree,
+    expand_bibr_citation_ranges,
     strip_noise,
     convert_month_name_to_number,
     get_xml_lang,
@@ -260,7 +261,7 @@ def allocate_refs_for_paragraph_to_sentences(
     refs_for_paragraph: list[Ref],
     sentence_spans: list[list[int]],
 ) -> tuple[list[list[Ref]], list[list[int]]]:
-    if not refs_for_paragraph or len(sentence_spans) <= 1:
+    if not refs_for_paragraph or len(sentence_spans) == 0:
         return [[] for _ in sentence_spans], sentence_spans
 
     refs_per_sentence: list[list[Ref]] = []
@@ -416,7 +417,9 @@ class PaperParser:
     def parse(self, x: str | etree._ElementTree | Path) -> Paper:
         src = str(x) if isinstance(x, Path) else x
         tree = build_xml_tree(src)
-        strip_noise(tree.getroot())
+        root_el = tree.getroot()
+        strip_noise(root_el)
+        expand_bibr_citation_ranges(root_el)
 
         main_id = (
             extract_pmc_id_from_path(x) if isinstance(x, (str, Path)) else None
